@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AURCAP India GIS Climate Dashboard</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar" aria-label="AURCAP controls">
+        <header class="brand">
+          <div class="brand-mark">A</div>
+          <div>
+            <p class="eyebrow">AURCAP India</p>
+            <h1>Climate Resilience GIS</h1>
+          </div>
+        </header>
+
+        <section class="control-block">
+          <label class="field-label" for="city-select">City focus</label>
+          <select id="city-select" onchange="setCity(this.value)">
+            <option value="delhi">Delhi NCR</option>
+            <option value="mumbai">Mumbai</option>
+            <option value="hyderabad" selected>Hyderabad</option>
+            <option value="bengaluru">Bengaluru</option>
+            <option value="chennai">Chennai</option>
+            <option value="kolkata">Kolkata</option>
+            <option value="ahmedabad">Ahmedabad</option>
+            <option value="pune">Pune</option>
+            <option value="guwahati">Guwahati</option>
+          </select>
+        </section>
+
+        <nav class="module-tabs" aria-label="AURCAP modules">
+          <button class="module-tab active" type="button" data-screen="overview">
+            <i data-lucide="layout-dashboard"></i><span>Overview</span>
+          </button>
+          <button class="module-tab" type="button" data-screen="heat">
+            <i data-lucide="thermometer-sun"></i><span>UHI Mitigation</span>
+          </button>
+          <button class="module-tab" type="button" data-screen="flood">
+            <i data-lucide="cloud-rain"></i><span>Flood Risk</span>
+          </button>
+          <button class="module-tab" type="button" data-screen="assets">
+            <i data-lucide="construction"></i><span>Infrastructure</span>
+          </button>
+          <button class="module-tab" type="button" data-screen="scenario">
+            <i data-lucide="sliders-horizontal"></i><span>Scenario</span>
+          </button>
+          <button class="module-tab" type="button" data-screen="reports">
+            <i data-lucide="file-text"></i><span>Reports</span>
+          </button>
+        </nav>
+
+        <section class="control-block layer-block">
+          <div class="block-header">
+            <h2>Open Layers</h2>
+            <button class="icon-button" type="button" id="fit-india" aria-label="Zoom to India">
+              <i data-lucide="map-pinned"></i>
+            </button>
+          </div>
+
+          <label class="toggle-row">
+            <input type="checkbox" data-layer-toggle="trueColor" checked />
+            <span>NASA true color</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" data-layer-toggle="lst" checked />
+            <span>MODIS land temperature</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" data-layer-toggle="ndvi" />
+            <span>VIIRS NDVI</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" data-layer-toggle="rain" />
+            <span>IMERG precipitation</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" data-layer-toggle="flood" />
+            <span>MODIS flood extent</span>
+          </label>
+          <label class="toggle-row">
+            <input type="checkbox" data-layer-toggle="uhi" checked />
+            <span>NASA UHI baseline</span>
+          </label>
+        </section>
+
+        <section class="control-block">
+          <label class="field-label" for="sat-date">Satellite date</label>
+          <div class="date-row">
+            <input id="sat-date" type="date" value="2024-05-01" />
+            <button class="icon-button primary" id="apply-date" type="button" aria-label="Apply satellite date">
+              <i data-lucide="calendar-check"></i>
+            </button>
+          </div>
+          <label class="field-label" for="raster-opacity">Satellite opacity</label>
+          <input id="raster-opacity" type="range" min="0.15" max="0.95" step="0.05" value="0.55" />
+        </section>
+
+        <section class="source-card">
+          <p class="eyebrow">Live sources</p>
+          <p>Leaflet, OpenStreetMap, NASA GIBS WMTS, MODIS, VIIRS, IMERG.</p>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Remote sensing and GIS decision support</p>
+            <h2 id="screen-title">City Resilience Overview</h2>
+          </div>
+          <div class="toolbar">
+            <button class="tool-button" type="button" id="locate-city">
+              <i data-lucide="crosshair"></i><span>Center</span>
+            </button>
+            <button class="tool-button" type="button" id="export-geojson">
+              <i data-lucide="braces"></i><span>GeoJSON</span>
+            </button>
+            <button class="tool-button" type="button" id="export-csv">
+              <i data-lucide="table"></i><span>CSV</span>
+            </button>
+            <button class="tool-button strong" type="button" id="print-report">
+              <i data-lucide="download"></i><span>Report</span>
+            </button>
+          </div>
+        </header>
+
+        <section class="dashboard-grid">
+          <section class="map-card">
+            <div id="map" aria-label="India GIS map"></div>
+            <div class="map-status">
+              <span id="active-city-label">Hyderabad</span>
+              <span id="map-coordinate">Click map for pixel risk</span>
+            </div>
+            <div class="map-legend" id="map-legend"></div>
+          </section>
+
+          <aside class="insight-panel" aria-label="Analysis panel">
+            <section class="panel-section">
+              <div class="panel-heading">
+                <p class="eyebrow" id="panel-kicker">India urban resilience</p>
+                <h3 id="panel-title">Hyderabad Climate Snapshot</h3>
+              </div>
+              <div class="score-row">
+                <div class="score-ring" id="score-ring" style="--score: 73">
+                  <strong id="score-value">73</strong>
+                  <span>score</span>
+                </div>
+                <div class="score-copy">
+                  <p id="screen-summary"></p>
+                  <div class="confidence">
+                    <span>Analysis confidence</span>
+                    <strong id="confidence-value">89%</strong>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="metric-grid" id="metric-grid"></section>
+
+            <section class="panel-section">
+              <div class="panel-heading compact">
+                <p class="eyebrow">Priority zones</p>
+                <h3 id="priority-title">Intervention Queue</h3>
+              </div>
+              <div class="priority-list" id="priority-list"></div>
+            </section>
+
+            <section class="panel-section data-section">
+              <div class="panel-heading compact">
+                <p class="eyebrow">Satellite layers</p>
+                <h3>Active Raster Stack</h3>
+              </div>
+              <div id="layer-readout" class="layer-readout"></div>
+            </section>
+          </aside>
+        </section>
+      </section>
+    </main>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
